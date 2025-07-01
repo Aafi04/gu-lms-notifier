@@ -6,15 +6,15 @@ from bs4 import BeautifulSoup
 LMS_URL = 'https://gulms.galgotiasuniversity.org/'
 TELEGRAM_BOT_TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("CHANNEL_USERNAME")
-GITHUB_REPO = os.getenv("REPO_NAME")  # e.g., username/repo
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")      # Automatically set in GitHub Actions
+GITHUB_REPO = os.getenv("REPO_NAME")  # e.g., Aafi04/gu-lms-notifier
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+ISSUE_NUMBER = 3  # <-- Update this to the current issue number
 # ==============
 
 def get_latest_announcement():
     response = requests.get(LMS_URL)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Extract the announcement title and date
     title_element = soup.select_one('h3[data-region-content="forum-post-core-subject"]')
     time_element = soup.select_one('time')
 
@@ -27,7 +27,7 @@ def get_latest_announcement():
     return full_announcement
 
 def get_last_sent_from_github_issue():
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/1"
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/{ISSUE_NUMBER}"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github+json"
@@ -37,10 +37,11 @@ def get_last_sent_from_github_issue():
         return response.json().get("body", "").strip()
     else:
         print("⚠️ Failed to fetch last sent announcement from GitHub Issue.")
+        print(response.text)
         return ""
 
 def save_last_sent_to_github_issue(text):
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/1"
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/{ISSUE_NUMBER}"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github+json"
@@ -51,6 +52,7 @@ def save_last_sent_to_github_issue(text):
         print("✅ Last announcement updated in GitHub Issue.")
     else:
         print("⚠️ Failed to update GitHub Issue.")
+        print(response.text)
 
 def send_telegram_message(text):
     url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
@@ -64,6 +66,7 @@ def send_telegram_message(text):
         print("✅ Message sent to Telegram.")
     else:
         print("⚠️ Failed to send Telegram message.")
+        print(response.text)
 
 def main():
     latest = get_latest_announcement()
