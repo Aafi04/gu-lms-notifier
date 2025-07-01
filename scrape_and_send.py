@@ -1,11 +1,11 @@
+import os
 import requests
 from bs4 import BeautifulSoup
-import os
 
 # === CONFIG ===
 LMS_URL = 'https://gulms.galgotiasuniversity.org/'
-TELEGRAM_BOT_TOKEN = '7691282939:AAFIZKEAYZFa46qPhSMhOb7XlN2meBgWYW8'
-TELEGRAM_CHAT_ID = '@btech2027'
+TELEGRAM_BOT_TOKEN = os.getenv("BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("CHANNEL_USERNAME")
 STATE_FILE = 'last_announcement.txt'
 # ==============
 
