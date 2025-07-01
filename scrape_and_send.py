@@ -7,7 +7,7 @@ LMS_URL = 'https://gulms.galgotiasuniversity.org/'
 TELEGRAM_BOT_TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("CHANNEL_USERNAME")
 GITHUB_REPO = os.getenv("REPO_NAME")  # e.g., Aafi04/gu-lms-notifier
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_TOKEN = os.getenv("GH_PAT")
 ISSUE_NUMBER = 3  # <-- Update this to the current issue number
 # ==============
 
