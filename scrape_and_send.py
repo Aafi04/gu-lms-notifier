@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 LMS_URL = 'https://gulms.galgotiasuniversity.org/'
 TELEGRAM_BOT_TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("CHANNEL_USERNAME")
-GITHUB_REPO = os.getenv("GITHUB_REPOSITORY")  # e.g., username/repo
+GITHUB_REPO = os.getenv("REPO_NAME")  # e.g., username/repo
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")      # Automatically set in GitHub Actions
 # ==============
 
