@@ -1,5 +1,10 @@
 name: GU LMS Notifier
 
+# NEW ↓
+permissions:
+  issues: write      # allow the token to edit issues
+  contents: read     # still need to read the repo
+  
 on:
   schedule:
     - cron: '*/5 * * * *'  # every 30 minutes
