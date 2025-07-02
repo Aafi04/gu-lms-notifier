@@ -23,8 +23,7 @@ def get_latest_announcement():
 
     title = title_element.text.strip()
     timestamp = time_element.text.strip()
-    full_announcement = f"## TEST -- {title}\nTime: {timestamp}\nLink: {LMS_URL}"
-
+    full_announcement = f"## {title}\nTime: {timestamp}\nLink: {LMS_URL}"
 
     # Find all file attachments
     attachments = []
