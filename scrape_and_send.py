@@ -8,105 +8,109 @@ TELEGRAM_BOT_TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("CHANNEL_USERNAME")
 GITHUB_REPO = os.getenv("REPO_NAME")
 GITHUB_TOKEN = os.getenv("GH_PAT")
-ISSUE_NUMBER = 3  # GitHub Issue number
+ANNOUNCEMENT_ISSUE_NUMBER = 3
 # ==============
 
 def get_latest_announcement():
     response = requests.get(LMS_URL)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    title_element = soup.select_one('h3[data-region-content="forum-post-core-subject"]')
-    time_element = soup.select_one('time')
+    post = soup.select_one('article.forum-post-container')
+    if not post:
+        return None
 
-    if not title_element or not time_element:
-        return None, []
+    # Title and time
+    title = post.select_one('h3[data-region-content="forum-post-core-subject"]').text.strip()
+    time = post.select_one('time').text.strip()
 
-    title = title_element.text.strip()
-    timestamp = time_element.text.strip()
-    full_announcement = f"## {title}\nTime: {timestamp}\nLink: {LMS_URL}"
+    # Content body text
+    content_div = post.select_one('.post-content-container')
+    content_text = content_div.get_text(separator='\n', strip=True) if content_div else ''
 
-    # Find all file attachments
-    attachments = []
-    for link in soup.find_all('a', href=True):
-        href = link['href']
-        if href.startswith("/pluginfile"):
-            file_url = "https://gulms.galgotiasuniversity.org" + href
-            attachments.append(file_url)
+    # File links
+    attachment_links = []
+    for a in post.find_all('a', href=True):
+        href = a['href']
+        if 'pluginfile.php' in href:
+            full_url = href if href.startswith('http') else LMS_URL + href.lstrip('/')
+            filename = a.get_text(strip=True)
+            attachment_links.append((full_url, filename))
 
-    return full_announcement, attachments
+    # Embedded images
+    image_links = []
+    for img in content_div.find_all('img', src=True) if content_div else []:
+        src = img['src']
+        if 'pluginfile.php' in src or src.startswith('http'):
+            full_url = src if src.startswith('http') else LMS_URL + src.lstrip('/')
+            image_links.append(full_url)
+
+    full_message = f"## {title}\nTime: {time}\n\n{content_text}\n\nLink: {LMS_URL}"
+    return full_message, attachment_links, image_links
 
 def get_last_sent_from_github_issue():
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/{ISSUE_NUMBER}"
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/{ANNOUNCEMENT_ISSUE_NUMBER}"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github+json"
     }
     response = requests.get(url, headers=headers)
-    if response.ok:
-        return response.json().get("body", "").strip()
-    else:
-        print("⚠️ Failed to fetch last sent announcement from GitHub Issue.")
-        return ""
+    return response.json().get("body", "").strip() if response.ok else ""
 
 def save_last_sent_to_github_issue(text):
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/{ISSUE_NUMBER}"
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/{ANNOUNCEMENT_ISSUE_NUMBER}"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github+json"
     }
-    data = {"body": text}
-    response = requests.patch(url, headers=headers, json=data)
+    response = requests.patch(url, headers=headers, json={"body": text})
     if response.ok:
         print("✅ Last announcement updated in GitHub Issue.")
     else:
         print("⚠️ Failed to update GitHub Issue.")
 
-def send_text_message(text):
-    url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
-    payload = {
-        'chat_id': TELEGRAM_CHAT_ID,
-        'text': text,
-        'parse_mode': 'Markdown'
-    }
-    requests.post(url, data=payload)
+def send_telegram_message(text, files=[], images=[]):
+    # Send main message
+    msg_response = requests.post(
+        f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage',
+        data={'chat_id': TELEGRAM_CHAT_ID, 'text': text, 'parse_mode': 'Markdown'}
+    )
+    print("✅ Message sent to Telegram." if msg_response.ok else "⚠️ Failed to send Telegram message.")
 
-def send_attachments(attachments):
-    for file_url in attachments:
-        filename = file_url.split('/')[-1].split('?')[0]
-        ext = filename.lower().split('.')[-1]
+    # Send attachments as documents
+    for file_url, file_name in files:
+        file_data = requests.get(file_url)
+        if file_data.ok:
+            print(f"📄 Sending file: {file_name}")
+            requests.post(
+                f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument',
+                data={'chat_id': TELEGRAM_CHAT_ID},
+                files={'document': (file_name, file_data.content)}
+            )
 
-        api_url = ''
-        payload_key = ''
-        if ext in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
-            api_url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto'
-            payload_key = 'photo'
-        else:
-            api_url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument'
-            payload_key = 'document'
-
-        payload = {
-            'chat_id': TELEGRAM_CHAT_ID,
-            payload_key: file_url
-        }
-        r = requests.post(api_url, data=payload)
-        if r.ok:
-            print(f"✅ Sent {filename}")
-        else:
-            print(f"⚠️ Failed to send {filename}: {r.text}")
+    # Send images as photos
+    for img_url in images:
+        img_data = requests.get(img_url)
+        if img_data.ok:
+            print(f"🖼️ Sending image: {img_url}")
+            requests.post(
+                f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto',
+                data={'chat_id': TELEGRAM_CHAT_ID},
+                files={'photo': img_data.content}
+            )
 
 def main():
-    latest, attachments = get_latest_announcement()
-    if latest is None:
+    result = get_latest_announcement()
+    if not result:
         print("⚠️ No announcement found.")
         return
 
+    latest_message, attachments, images = result
     last_sent = get_last_sent_from_github_issue()
 
-    if latest != last_sent:
+    if latest_message != last_sent:
         print("✅ New announcement found. Sending to Telegram...")
-        send_text_message(latest)
-        send_attachments(attachments)
-        save_last_sent_to_github_issue(latest)
+        send_telegram_message(latest_message, files=attachments, images=images)
+        save_last_sent_to_github_issue(latest_message)
     else:
         print("ℹ️ No new announcement.")
 
