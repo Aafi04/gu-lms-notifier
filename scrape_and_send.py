@@ -27,6 +27,12 @@ def get_latest_announcement():
     content_div = post.select_one('.post-content-container')
     content_text = content_div.get_text(separator='\n', strip=True) if content_div else ''
 
+    # Clean duplication: if content is same as title, just bold title once
+    if content_text == title:
+        body = f"**{title}**"
+    else:
+        body = content_text
+
     # File links
     attachment_links = []
     for a in post.find_all('a', href=True):
@@ -44,7 +50,7 @@ def get_latest_announcement():
             full_url = src if src.startswith('http') else LMS_URL + src.lstrip('/')
             image_links.append(full_url)
 
-    full_message = f"## {title}\nTime: {time}\n\n{content_text}\n\nLink: {LMS_URL}"
+    full_message = f"## {title}\nTime: {time}\n\n{body}\n\nLink: {LMS_URL}"
     return full_message, attachment_links, image_links
 
 def get_last_sent_from_github_issue():
