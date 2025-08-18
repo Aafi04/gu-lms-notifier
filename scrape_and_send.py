@@ -90,7 +90,8 @@ def get_latest_announcement():
   
 
   
-    full_message = f"## {title}\nTime: {time}\n\n{content_text}\n\nLink: {LMS_URL}"
+    full_message = f"{title}\nTime: {time}\n\nLink: {LMS_URL}"
+
   
     return full_message, attachment_links, image_links
   
