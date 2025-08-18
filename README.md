@@ -119,4 +119,4 @@ Pull requests and suggestions are welcome! Please open an issue for major change
 
 ## Credits
 
-Developed by [Aafi04](https://github.com/Aafi04) and contributors.
+Developed by [Aafi04](https://github.com/Aafi04)
