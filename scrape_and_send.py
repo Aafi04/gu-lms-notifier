@@ -30,7 +30,8 @@ def get_latest_announcement():
   
 
   
-    post = soup.select_one('article.forum-post-container')
+    # The site uses a div with classes like 'forumpost' / 'forumpost focus-target' for posts
+    post = soup.select_one('div.forumpost')
   
     if not post:
   
@@ -40,17 +41,21 @@ def get_latest_announcement():
   
     # Title and time
   
-    title = post.select_one('h3[data-region-content="forum-post-core-subject"]').text.strip()
-  
-    time = post.select_one('time').text.strip()
+    # Title: try the subject h3 first, fall back to any h3
+    title_el = post.select_one('h3[data-region-content="forum-post-core-subject"]') or post.find('h3')
+    title = title_el.text.strip() if title_el else ''
+
+    # Time: choose the first <time> element
+    time_el = post.select_one('time')
+    time = time_el.text.strip() if time_el else ''
   
 
   
     # Content body text
   
-    content_div = post.select_one('.post-content-container')
-  
-    content_text = content_div.get_text(separator='\n', strip=True) if content_div else ''
+    # Content body: post-content-container inside the post (id like post-content-12984)
+    content_div = post.select_one('.post-content-container') or post.select_one('[id^="post-content-"]')
+    content_text = content_div.get_text(separator='\n\n', strip=True) if content_div else ''
   
 
   
@@ -64,7 +69,7 @@ def get_latest_announcement():
   
         if 'pluginfile.php' in href:
   
-            full_url = href if href.startswith('http') else LMS_URL + href.lstrip('/')
+            full_url = href if href.startswith('http') else LMS_URL.rstrip('/') + '/' + href.lstrip('/')
   
             filename = a.get_text(strip=True)
   
@@ -76,19 +81,20 @@ def get_latest_announcement():
   
     image_links = []
   
-    for img in content_div.find_all('img', src=True) if content_div else []:
+    for img in (content_div.find_all('img', src=True) if content_div else []):
   
         src = img['src']
   
         if 'pluginfile.php' in src or src.startswith('http'):
   
-            full_url = src if src.startswith('http') else LMS_URL + src.lstrip('/')
+            full_url = src if src.startswith('http') else LMS_URL.rstrip('/') + '/' + src.lstrip('/')
   
             image_links.append(full_url)
   
 
   
-    full_message = f"{title}\nTime: {time}\n\nLink: {LMS_URL}"
+    # Compose message including the scraped post content
+    full_message = f"{title}\nTime: {time}\n\n{content_text}\n\nLink: {LMS_URL}"
 
   
     return full_message, attachment_links, image_links
@@ -138,18 +144,25 @@ def save_last_sent_to_github_issue(text):
 
   
 def send_telegram_message(text, files=[], images=[]):
-  
+    # Dry-run: if DRY_RUN env var set, just print what would be sent
+    dry = os.getenv('DRY_RUN', '').lower() in ('1', 'true', 'yes')
+    if dry:
+        print('--- DRY RUN: Telegram payload ---')
+        print('chat_id:', TELEGRAM_CHAT_ID)
+        print('text:')
+        print(text)
+        print('\nattachments:', files)
+        print('images:', images)
+        print('--- end payload ---')
+        return
+
     # Send main message
-  
     msg_response = requests.post(
-  
         f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage',
-  
         data={'chat_id': TELEGRAM_CHAT_ID, 'text': text, 'parse_mode': 'Markdown'}
-  
     )
-  
-    print("✅ Message sent to Telegram." if msg_response.ok else "⚠️ Failed to send Telegram message.")
+
+    print("✅ Message sent to Telegram." if msg_response.ok else f"⚠️ Failed to send Telegram message: {msg_response.status_code} {msg_response.text}")
   
 
   
