@@ -144,18 +144,6 @@ def save_last_sent_to_github_issue(text):
 
   
 def send_telegram_message(text, files=[], images=[]):
-    # Dry-run: if DRY_RUN env var set, just print what would be sent
-    dry = os.getenv('DRY_RUN', '').lower() in ('1', 'true', 'yes')
-    if dry:
-        print('--- DRY RUN: Telegram payload ---')
-        print('chat_id:', TELEGRAM_CHAT_ID)
-        print('text:')
-        print(text)
-        print('\nattachments:', files)
-        print('images:', images)
-        print('--- end payload ---')
-        return
-
     # Send main message
     msg_response = requests.post(
         f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage',
