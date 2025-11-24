@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 # === CONFIG ===
 
-LMS_URL = 'https://gulgotiasuniversity.org/'
+LMS_URL = 'https://gulms.galgotiasuniversity.org/'
 
 TELEGRAM_BOT_TOKEN = os.getenv("BOT_TOKEN")
 
