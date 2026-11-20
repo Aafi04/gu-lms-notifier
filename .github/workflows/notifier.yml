@@ -1,0 +1,32 @@
+name: GU LMS Notifier
+
+permissions:
+  issues: write       # Needed to update GitHub Issues
+  contents: read      # Needed to read the repository
+
+on:
+  workflow_dispatch:       # Allow manual trigger
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run notifier
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHANNEL_USERNAME: ${{ secrets.CHANNEL_USERNAME }}
+          REPO_NAME: ${{ secrets.REPO_NAME }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: python scrape_and_send.py
